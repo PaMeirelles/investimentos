@@ -14,6 +14,7 @@ def read_1d_csv(name):
 
 def filter_all():
     df = pd.read_csv("statusinvest-busca-avancada.csv", sep=';', thousands='.', decimal=",")
+    df.dropna(inplace=True, subset=['TICKER', 'PRECO', ' LIQUIDEZ MEDIA DIARIA', 'CAGR LUCROS 5 ANOS'])
     df = df[df["TICKER"].str[4] == '3']
 
     estatais = read_1d_csv('estatais')
@@ -21,6 +22,13 @@ def filter_all():
 
     df = df[df['PRECO'].astype(int) != 0]
     df = df[df[" LIQUIDEZ MEDIA DIARIA"].astype(float) >= 3000000]
+
+    graham()
+    gr = pd.read_csv("analise.csv")
+    df = df.merge(gr)
+    df = df[df["Graham"] < 1]
+
+    df = df[df['CAGR LUCROS 5 ANOS'] >= 30]
     df.to_csv("filtrado.csv", index=False)
 
 
@@ -45,14 +53,12 @@ def teste():
     tenho = pd.read_csv("possui.csv")
     novo = tudo.merge(tenho)
     su = novo['QTD'].astype(float) * novo['PRECO'].astype(float)
-    print(novo[["QTD", "PRECO"]])
     s += su.sum()
     print(s)
 
 
 if __name__ == '__main__':
-    filter_all()
     extrai()
-    graham()
-    teste()
+    filter_all()
+
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
