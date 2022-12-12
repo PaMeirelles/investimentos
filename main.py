@@ -32,12 +32,18 @@ def filter_all():
     gr = pd.read_csv("analise.csv")
     df = df.merge(gr)
     df = df[df["Graham"] < 1]
+
     print(df.shape)
     df = df[df['CAGR LUCROS 5 ANOS'] >= 30]
-
+    print(df.shape)
     preju = pd.read_csv("prejuizo")
     df = df.merge(preju)
-    df = df[df["MAX1"] == 1]
+    df = df[df["ALL"] == 0]
+    print(df.shape)
+
+    ban = pd.read_csv("ban")
+    df = df.merge(ban, how="outer", left_on="TICKER", right_on="BAN")
+    df = df[df["BAN"] != df["TICKER"]]
     print(df.shape)
     df.to_csv("filtrado.csv", index=False)
 
