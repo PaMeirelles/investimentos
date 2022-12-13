@@ -74,10 +74,12 @@ def teste():
 
 
 def definir_compra(valor):
+    valor_inicial = valor
     df = pd.read_csv("possui.csv").merge(pd.read_csv("filtrado.csv"))
     cada_um = (teste() + valor) / df.shape[0]
     df["variacao"] = cada_um - df["QTD"] * df["PRECO"]
     dic = {}
+    gasto = 0
     for i, value in df.iterrows():
         dic[value["TICKER"]] = {"QTD": value["QTD"], "PRECO": value["PRECO"], "variacao": value["variacao"], "comprado": 0}
 
@@ -88,10 +90,11 @@ def definir_compra(valor):
             maximo["comprado"] += 1
             valor -= maximo['PRECO']
             maximo["variacao"] = cada_um - (maximo["QTD"] + maximo["comprado"]) * maximo["PRECO"]
+            gasto += maximo["PRECO"]
         else:
             print(max_key, maximo["comprado"])
             del dic[max_key]
-    print(dic)
+    print(f"Gasto: R${round(gasto,2)} ({round(100 * gasto / valor_inicial, 2)}%)")
 
 if __name__ == '__main__':
     definir_compra(7160)
