@@ -70,11 +70,29 @@ def teste():
     novo = tudo.merge(tenho)
     su = novo['QTD'].astype(float) * novo['PRECO'].astype(float)
     s += su.sum()
-    print(s)
+    return s
 
+
+def definir_compra(valor):
+    df = pd.read_csv("possui.csv").merge(pd.read_csv("filtrado.csv"))
+    cada_um = (teste() + valor) / df.shape[0]
+    df["variacao"] = cada_um - df["QTD"] * df["PRECO"]
+    dic = {}
+    for i, value in df.iterrows():
+        dic[value["TICKER"]] = {"QTD": value["QTD"], "PRECO": value["PRECO"], "variacao": value["variacao"], "comprado": 0}
+
+    while len(dic) > 0:
+        max_key = [key for key in dic.keys() if dic[key]["variacao"] == max([dic[key2]["variacao"] for key2 in dic.keys()])][0]
+        maximo = dic[max_key]
+        if maximo["PRECO"] < maximo["variacao"] and maximo["PRECO"] < valor:
+            maximo["comprado"] += 1
+            valor -= maximo['PRECO']
+            maximo["variacao"] = cada_um - (maximo["QTD"] + maximo["comprado"]) * maximo["PRECO"]
+        else:
+            print(max_key, maximo["comprado"])
+            del dic[max_key]
+    print(dic)
 
 if __name__ == '__main__':
-    extrai()
-    filter_all()
-
+    definir_compra(7160)
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
