@@ -13,70 +13,70 @@ def read_1d_csv(name):
 
 
 def filter_all():
-    df = pd.read_csv("statusinvest-busca-avancada.csv", sep=';', thousands='.', decimal=",")
-    print(df.shape)
+    df = pd.read_csv("acoes/Interno/statusinvest-busca-avancada.csv", sep=';', thousands='.', decimal=",")
+    estatais = read_1d_csv('acoes/estatais')
+    gr = pd.read_csv("acoes/Interno/analise.csv")
+    preju = pd.read_csv("acoes/prejuizo")
+    ban = pd.read_csv("acoes/ban")
 
+    print(df.shape)
     df.dropna(inplace=True, subset=['TICKER', 'PRECO', ' LIQUIDEZ MEDIA DIARIA', 'CAGR LUCROS 5 ANOS'])
+    graham()
+    df = df.merge(gr, how="outer")
+    df = df.merge(preju, how="outer")
+    df = df.merge(ban, how="outer", left_on="TICKER", right_on="BAN")
     print(df.shape)
-
     df = df[df["TICKER"].str[4] == '3']
     print(df.shape)
-
-    estatais = read_1d_csv('estatais')
     df = df[~df[['TICKER']].isin(estatais).any(axis=1)]
     print(df.shape)
     df = df[df[" LIQUIDEZ MEDIA DIARIA"].astype(float) >= 700000]
     print(df.shape)
-    graham()
-    print(df.shape)
-    gr = pd.read_csv("analise.csv")
-    df = df.merge(gr)
     df = df[df["Graham"] < 1]
-
     print(df.shape)
+
     df = df[df['CAGR LUCROS 5 ANOS'] >= 30]
-    print(df.shape)
-    preju = pd.read_csv("prejuizo")
-    df = df.merge(preju)
     df = df[df["ALL"] == 0]
-    print(df.shape)
-
-    ban = pd.read_csv("ban")
-    df = df.merge(ban, how="outer", left_on="TICKER", right_on="BAN")
     df = df[df["BAN"] != df["TICKER"]]
-    print(df.shape)
-    df.to_csv("filtrado.csv", index=False)
+
+    df.to_csv("acoes/Interno/filtrado.csv", index=False)
 
 
 def extrai():
-    df = pd.read_csv("statusinvest-busca-avancada.csv", sep=';', thousands='.', decimal=",")
+    df = pd.read_csv("acoes/Interno/statusinvest-busca-avancada.csv", sep=';', thousands='.', decimal=",")
     df = df[["TICKER"]].copy()
-    df.to_csv("analise.csv", index=False)
+    df.to_csv("acoes/Interno/analise.csv", index=False)
 
 
 def graham():
-    df1 = pd.read_csv("statusinvest-busca-avancada.csv", sep=';', thousands='.', decimal=",")
-    df2 = pd.read_csv("analise.csv")
+    extrai()
+
+    df1 = pd.read_csv("acoes/Interno/statusinvest-busca-avancada.csv", sep=';', thousands='.', decimal=",")
+    df2 = pd.read_csv("acoes/Interno/analise.csv")
+
     df2["Graham"] = df1["PRECO"] / (df1[" VPA"].astype(float) * df1[" LPA"].astype(float) * 22.5) ** 0.5
+
     df2.sort_values(by="Graham", inplace=True)
     df2.dropna(inplace=True)
-    df2.to_csv("analise.csv", index=False)
+    df2.to_csv("acoes/Interno/analise.csv", index=False)
 
 
-def teste():
+def total_investido():
     s = 0
-    tudo = pd.read_csv("statusinvest-busca-avancada.csv", sep=';', thousands='.', decimal=",")
-    tenho = pd.read_csv("possui.csv")
+    tudo = pd.read_csv("acoes/Interno/statusinvest-busca-avancada.csv", sep=';', thousands='.', decimal=",")
+    tenho = pd.read_csv("acoes/possui.csv")
     novo = tudo.merge(tenho)
     su = novo['QTD'].astype(float) * novo['PRECO'].astype(float)
     s += su.sum()
     return s
 
 
-def definir_compra(valor):
+def definir_compra(valor, completar=False):
+    df = pd.read_csv("acoes/possui.csv").merge(pd.read_csv("acoes/Interno/filtrado.csv"))
+    if completar:
+        valor = valor - total_investido()
     valor_inicial = valor
-    df = pd.read_csv("possui.csv").merge(pd.read_csv("filtrado.csv"))
-    cada_um = (teste() + valor) / df.shape[0]
+    cada_um = (total_investido() + valor) / df.shape[0]
     df["variacao"] = cada_um - df["QTD"] * df["PRECO"]
     dic = {}
     gasto = 0
@@ -86,7 +86,7 @@ def definir_compra(valor):
     while len(dic) > 0:
         max_key = [key for key in dic.keys() if dic[key]["variacao"] == max([dic[key2]["variacao"] for key2 in dic.keys()])][0]
         maximo = dic[max_key]
-        if maximo["PRECO"] < maximo["variacao"] and maximo["PRECO"] < valor:
+        if abs(maximo["variacao"] + maximo["PRECO"]) < abs(maximo["variacao"]) and maximo["PRECO"] < valor:
             maximo["comprado"] += 1
             valor -= maximo['PRECO']
             maximo["variacao"] = cada_um - (maximo["QTD"] + maximo["comprado"]) * maximo["PRECO"]
@@ -96,6 +96,7 @@ def definir_compra(valor):
             del dic[max_key]
     print(f"Gasto: R${round(gasto,2)} ({round(100 * gasto / valor_inicial, 2)}%)")
 
+
 if __name__ == '__main__':
-    definir_compra(7160)
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    filter_all()
+    definir_compra(50)
