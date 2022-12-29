@@ -20,14 +20,13 @@ def filter_all():
     preju = pd.read_csv("acoes/prejuizo")
     ban = pd.read_csv("acoes/ban")
 
-    df.dropna(inplace=True, subset=['TICKER', 'PRECO', ' LIQUIDEZ MEDIA DIARIA', 'CAGR LUCROS 5 ANOS'])
     graham()
     df = df.merge(gr, how="outer")
     df = df.merge(preju, how="outer")
     df = df.merge(ban, how="outer", left_on="TICKER", right_on="BAN")
     df = df[df["TICKER"].str[4] == '3']
     df = df[~df[['TICKER']].isin(estatais).any(axis=1)]
-    df = df[df[" LIQUIDEZ MEDIA DIARIA"].astype(float) >= 700000]
+    df = df[df[" LIQUIDEZ MEDIA DIARIA"].astype(float) >= 70000]
     df = df[df["Graham"] < 1]
     df = df[df['CAGR LUCROS 5 ANOS'] >= 30]
     df = df[df["ALL"] == 0]
